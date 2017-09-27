@@ -139,4 +139,3 @@ class DeepLearning:
                     final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, Y: expected_outputs})
 
                     print("Final Training cost: {}".format(final_training_cost))
-                    save_path = saved_model.save(session, "logs/trained_model/"+self.name+'.ckpt')
