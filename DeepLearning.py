@@ -1,6 +1,32 @@
 import tensorflow as tf
 
 
+def tensor_scaler(tensor, expected_tensor):
+    value_list = []
+    data_list = []
+    expected_list = []
+    for table in tensor:
+        for value in table:
+            value_list.append(value)
+    for table in expected_tensor:
+        for value in table:
+            value_list.append(value)
+    list_max = max(value_list)
+    for table in tensor:
+        change_list = []
+        for value in table:
+            x = value/list_max
+            change_list.append(x)
+        data_list.append(change_list)
+    for table in expected_tensor:
+        change_list = []
+        for value in table:
+            x = value / list_max
+            change_list.append(x)
+        expected_list.append(change_list)
+    return data_list, expected_list, list_max
+
+
 class DeepLearning:
     def __init__(self, name: str, inputs: int, outputs: int, epoch: int = 100, lr: float = 0.001):
         """
@@ -73,7 +99,7 @@ class DeepLearning:
         """
         del self.fc_layers[layer]
 
-    def train_neural_network(self, data_inputs, expected_outputs):
+    def train_neural_network(self, data_inputs, expected_outputs, tensor_max=None):
         if not self.fc_layers:
             print('Error, no layers initialized.')
         else:
@@ -83,8 +109,8 @@ class DeepLearning:
                 biases = tf.get_variable(name="final_biases", shape=[self.outputs], initializer=tf.zeros_initializer())
                 prediction = tf.matmul(self.fc_layers['layer'+str(final_layer)]['output'], weights) + biases
                 with tf.variable_scope('cost'):
-                    Y = tf.placeholder(tf.float32, shape=(None, 1))
-                    cost = tf.reduce_mean(tf.squared_difference(prediction, Y))
+                    actual_value = tf.placeholder(tf.float32, shape=(None, 1))
+                    cost = tf.reduce_mean(tf.squared_difference(prediction, actual_value))
 
                 with tf.variable_scope('train'):
                     optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
@@ -94,18 +120,23 @@ class DeepLearning:
                     session.run(tf.global_variables_initializer())
 
                     for epoch in range(self.epoch):
-                        session.run(optimizer, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                        session.run(optimizer, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
                         if epoch % 5 == 0:
-                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
 
                             print(epoch, training_cost)
 
                     print("Training is complete!")
 
-                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
 
                     print("Final Training cost: {}".format(final_training_cost))
                     save_path = saved_model.save(session, "logs/trained_model/"+self.name+'.ckpt')
+
+                    predictions = session.run(prediction, feed_dict={self.data: data_inputs})
+                    if tensor_max != None:
+                        unscaled_max = predictions*tensor_max
+                        print('predicted value was' + str(unscaled_max))
 
     def load_trained_neural_network(self, data_inputs: list, expected_outputs: list, name: str):
         if not self.fc_layers:
@@ -117,8 +148,8 @@ class DeepLearning:
                 biases = tf.get_variable(name="final_biases", shape=[self.outputs], initializer=tf.zeros_initializer())
                 prediction = tf.matmul(self.fc_layers['layer'+str(final_layer)]['output'], weights) + biases
                 with tf.variable_scope('cost'):
-                    Y = tf.placeholder(tf.float32, shape=(None, 1))
-                    cost = tf.reduce_mean(tf.squared_difference(prediction, Y))
+                    actual_value = tf.placeholder(tf.float32, shape=(None, 1))
+                    cost = tf.reduce_mean(tf.squared_difference(prediction, actual_value))
 
                 with tf.variable_scope('train'):
                     optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
@@ -128,14 +159,14 @@ class DeepLearning:
                     saved_model.restore(session, name)
 
                     for epoch in range(self.epoch):
-                        session.run(optimizer, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                        session.run(optimizer, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
                         if epoch % 5 == 0:
-                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
 
                             print(epoch, training_cost)
 
                     print("Training is complete!")
 
-                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, Y: expected_outputs})
+                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
 
                     print("Final Training cost: {}".format(final_training_cost))
