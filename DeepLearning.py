@@ -136,8 +136,6 @@ class DeepLearning:
 
     def load_trained_neural_network(self, data_inputs: list, name: str, tensor_max=None):
         cost, prediction, actual_value = DeepLearning.output_layer(self)
-        with tf.variable_scope('train'):
-            optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
         saved_model = tf.train.Saver()
         with tf.Session() as session:
             saved_model.restore(session, name)
