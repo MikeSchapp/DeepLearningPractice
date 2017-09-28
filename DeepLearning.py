@@ -99,7 +99,7 @@ class DeepLearning:
         """
         del self.fc_layers[layer]
 
-    def train_neural_network(self, data_inputs, expected_outputs, tensor_max=None):
+    def output_layer(self):
         if not self.fc_layers:
             print('Error, no layers initialized.')
         else:
@@ -111,54 +111,37 @@ class DeepLearning:
                 with tf.variable_scope('cost'):
                     actual_value = tf.placeholder(tf.float32, shape=(None, 1))
                     cost = tf.reduce_mean(tf.squared_difference(prediction, actual_value))
+                return cost, prediction, actual_value
 
-                with tf.variable_scope('train'):
-                    optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
-                saved_model = tf.train.Saver()
-                with tf.Session() as session:
-
-                    session.run(tf.global_variables_initializer())
-
-                    for epoch in range(self.epoch):
-                        session.run(optimizer, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-                        if epoch % 5 == 0:
-                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-
-                            print(epoch, training_cost)
-
-                    print("Training is complete!")
-
-                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-
-                    print("Final Training cost: {}".format(final_training_cost))
-                    save_path = saved_model.save(session, "logs/trained_model/"+self.name+'.ckpt')
-
-                    predictions = session.run(prediction, feed_dict={self.data: data_inputs})
-                    if tensor_max != None:
-                        unscaled_max = predictions*tensor_max
-                        print('predicted value was' + str(unscaled_max))
+    def train_neural_network(self, data_inputs, expected_outputs, tensor_max=None):
+        cost, prediction, actual_value = DeepLearning.output_layer(self)
+        with tf.variable_scope('train'):
+            optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
+            saved_model = tf.train.Saver()
+            with tf.Session() as session:
+                session.run(tf.global_variables_initializer())
+                for epoch in range(self.epoch):
+                    session.run(optimizer, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
+                    if epoch % 5 == 0:
+                        training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
+                        print(epoch, training_cost)
+                print("Training is complete!")
+                final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
+                print("Final Training cost: {}".format(final_training_cost))
+                save_path = saved_model.save(session, "logs/trained_model/"+self.name+'.ckpt')
+                predictions = session.run(prediction, feed_dict={self.data: data_inputs})
+                if tensor_max != None:
+                    unscaled_max = predictions*tensor_max
+                    print('predicted value was' + str(unscaled_max))
 
     def load_trained_neural_network(self, data_inputs: list, expected_outputs: list, name: str, tensor_max=None):
-        if not self.fc_layers:
-            print('Error, no layers initialized.')
-        else:
-            with tf.variable_scope('output'):
-                final_layer = self.layer_int - 1
-                weights = tf.get_variable("final_weights", shape=[self.fc_layers['layer'+str(final_layer)]['nodes'], self.outputs], initializer=tf.contrib.layers.xavier_initializer())
-                biases = tf.get_variable(name="final_biases", shape=[self.outputs], initializer=tf.zeros_initializer())
-                prediction = tf.matmul(self.fc_layers['layer'+str(final_layer)]['output'], weights) + biases
-                with tf.variable_scope('cost'):
-                    actual_value = tf.placeholder(tf.float32, shape=(None, 1))
-                    cost = tf.reduce_mean(tf.squared_difference(prediction, actual_value))
-
-                with tf.variable_scope('train'):
-                    optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
-                saved_model = tf.train.Saver()
-                with tf.Session() as session:
-
-                    saved_model.restore(session, name)
-
-                    predictions = session.run(prediction, feed_dict={self.data: data_inputs})
-                    if tensor_max != None:
-                        unscaled_max = predictions*tensor_max
-                        print('predicted value was' + str(unscaled_max))
+        cost, prediction, actual_value = DeepLearning.output_layer(self)
+        with tf.variable_scope('train'):
+            optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
+        saved_model = tf.train.Saver()
+        with tf.Session() as session:
+            saved_model.restore(session, name)
+            predictions = session.run(prediction, feed_dict={self.data: data_inputs})
+            if tensor_max != None:
+                unscaled_max = predictions*tensor_max
+                print('predicted value was' + str(unscaled_max))
