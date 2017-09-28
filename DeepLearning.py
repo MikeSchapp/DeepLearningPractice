@@ -134,7 +134,7 @@ class DeepLearning:
                     unscaled_max = predictions*tensor_max
                     print('predicted value was' + str(unscaled_max))
 
-    def load_trained_neural_network(self, data_inputs: list, expected_outputs: list, name: str, tensor_max=None):
+    def load_trained_neural_network(self, data_inputs: list, name: str, tensor_max=None):
         cost, prediction, actual_value = DeepLearning.output_layer(self)
         with tf.variable_scope('train'):
             optimizer = tf.train.AdamOptimizer(self.lr).minimize(cost)
