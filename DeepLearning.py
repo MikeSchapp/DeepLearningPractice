@@ -138,7 +138,7 @@ class DeepLearning:
                         unscaled_max = predictions*tensor_max
                         print('predicted value was' + str(unscaled_max))
 
-    def load_trained_neural_network(self, data_inputs: list, expected_outputs: list, name: str):
+    def load_trained_neural_network(self, data_inputs: list, expected_outputs: list, name: str, tensor_max=None):
         if not self.fc_layers:
             print('Error, no layers initialized.')
         else:
@@ -158,15 +158,7 @@ class DeepLearning:
 
                     saved_model.restore(session, name)
 
-                    for epoch in range(self.epoch):
-                        session.run(optimizer, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-                        if epoch % 5 == 0:
-                            training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-
-                            print(epoch, training_cost)
-
-                    print("Training is complete!")
-
-                    final_training_cost = session.run(cost, feed_dict={self.data: data_inputs, actual_value: expected_outputs})
-
-                    print("Final Training cost: {}".format(final_training_cost))
+                    predictions = session.run(prediction, feed_dict={self.data: data_inputs})
+                    if tensor_max != None:
+                        unscaled_max = predictions*tensor_max
+                        print('predicted value was' + str(unscaled_max))
