@@ -109,7 +109,7 @@ class DeepLearning:
                 biases = tf.get_variable(name="final_biases", shape=[self.outputs], initializer=tf.zeros_initializer())
                 prediction = tf.matmul(self.fc_layers['layer'+str(final_layer)]['output'], weights) + biases
                 with tf.variable_scope('cost'):
-                    actual_value = tf.placeholder(tf.float32, shape=(None, 1))
+                    actual_value = tf.placeholder(tf.float32, shape=(None, self.outputs))
                     cost = tf.reduce_mean(tf.squared_difference(prediction, actual_value))
                 return cost, prediction, actual_value
 
@@ -133,6 +133,8 @@ class DeepLearning:
                 if tensor_max != None:
                     unscaled_max = predictions*tensor_max
                     print('predicted value was' + str(unscaled_max))
+                else:
+                    print('predicted value was' + str(predictions))
 
     def load_trained_neural_network(self, data_inputs: list, name: str, tensor_max=None):
         cost, prediction, actual_value = DeepLearning.output_layer(self)
@@ -143,3 +145,5 @@ class DeepLearning:
             if tensor_max != None:
                 unscaled_max = predictions*tensor_max
                 print('predicted value was' + str(unscaled_max))
+            else:
+                print('predicted value was' + str(predictions))
